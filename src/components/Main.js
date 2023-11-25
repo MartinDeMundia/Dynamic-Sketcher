@@ -12,11 +12,16 @@ import Rectangle from './Rectangle';
 
 const Main = () => {
   const [shapes, setShapes] = useState([]);
+  const [isedit, setIsEdit] = useState([false]);
+
+  const [index, setIndex] = useState([]);
+
   const [newshape, setNewshape] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const handleShowModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
+  const [selectedColor, setSelectedColor] = useState('black');
 
   const [formData, setFormData] = useState({
         length: '400',
@@ -33,22 +38,41 @@ const handleInputChange = (event) => {
       };
 
   const handleSave = () => { 
-    console.log(formData);
-    setShapes([...shapes, { type: newshape, id: Date.now(), dimensions: { width: formData.width, height: formData.length }, position: { left: 0, top: 0 } }]);  
-    toast.success(`Created a ${newshape}`, {
-      position: 'top-right',
-      autoClose: 2000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
+    //console.log(formData);
+ if(isedit=== true){ //alert(index);
+  setShapes((prevShapes) => {
+    const updatedShapes = [...prevShapes];
+    const newDimensions= {
+        "width": formData.width,
+        "height": formData.length,
+        "color": selectedColor,
+    };
+    updatedShapes[index].dimensions = newDimensions;  
+
+    return updatedShapes;
+  });
+ }else{
+  setShapes([...shapes, { type: newshape, id: Date.now(), dimensions: { width: formData.width, height: formData.length , color: selectedColor }, position: { left: 0, top: 0 } }]);  
+  toast.success(`Created a ${newshape}`, {
+    position: 'top-right',
+    autoClose: 2000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+  });
+  setIsEdit(false);
+  setIndex(null);  
+ }
+
 
     setInputValue('');
     handleCloseModal();
   };
 
   const addShape = (shapeType) => {
+    setIsEdit(false);
+    setIndex(null); 
     setNewshape(shapeType);
     handleShowModal();
   };
@@ -70,8 +94,17 @@ const handleInputChange = (event) => {
   };
 
   const handleEditShape = (index, oldimensions ,dimensions) => {
-     console.log(oldimensions);
-  
+      setIsEdit(true);
+      setIndex(index);   
+      handleShowModal();  
+  };
+
+  const deleteShape = (index) => {
+    setShapes((prevShapes) => {
+      const updatedShapes = [...prevShapes];
+      updatedShapes.splice(index, 1);
+      return updatedShapes;
+    });
   };
 
   const renderShapes = () => {
@@ -82,20 +115,19 @@ const handleInputChange = (event) => {
       return (
         <Draggable key={id} onDrag={(e, data) => handleDrag(index, data)}>
           <div style={{ position: 'absolute', ...position }}>
-            <ShapeComponent dimensions={dimensions} onResize={(newDimensions) => handleResize(index, newDimensions)} />
-            <div style={{ position: 'absolute', top: '-20px', left: '0', color: 'white',background: 'grey' , cursor: 'pointer', marginLeft:"50%",opacity:"0.5" }}   onClick={(newDimensions) => {
+            <ShapeComponent dimensions={dimensions} onResize={(newDimensions) => handleResize(index, newDimensions)} onDelete={() => deleteShape(index)} />
+            <div style={{ position: 'absolute', top: '-20px', left: '0', color: 'white',background: 'grey' , cursor: 'pointer', marginLeft:"50%",opacity:"0.5" }}   onDoubleClick={(newDimensions) => {
                         handleEditShape(index, newDimensions ,dimensions)
                 }}>
-              Position: {position.left},{position.top}
-              <br />
-              Measurements: {dimensions.width} x {dimensions.height}
+              <h6 style={{fontSize:"0.8em"}}>Drag=move,double click=edit</h6>             
+              <span style={{fontSize:"0.6em"}}>{dimensions.width} x {dimensions.height}</span>
             </div>
           </div>
         </Draggable>
       );
     });
   };
-
+  const greyShades = ['orange', 'green', 'blue', 'grey', 'black'];
   return (
     <div style={{ display: 'flex' }}>
       <div style={{ width: '150px', padding: '10px', borderRight: '1px solid #ccc' }}>
@@ -118,6 +150,16 @@ const handleInputChange = (event) => {
                     <Form.Label>Width</Form.Label>
                     <Form.Control type="text" name="width" id="width" placeholder="Width" value={formData.width} onChange={handleInputChange} />
                     </Form.Group>
+                    <Form.Group controlId="formBasicSelect">
+                    <Form.Label>Select Color</Form.Label>
+                    <Form.Control as="select" value={selectedColor} onChange={(e) => setSelectedColor(e.target.value)}>
+                      {greyShades.map((color) => (
+                        <option key={color} value={color}>
+                          {color}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={handleCloseModal}>
